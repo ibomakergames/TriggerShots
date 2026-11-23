@@ -7,15 +7,22 @@ import android.view.accessibility.AccessibilityEvent;
 
 public class TriggerAccessibilityService extends AccessibilityService {
     private static TriggerAccessibilityService instance;
+    private boolean gesturePending=false;
     public static TriggerAccessibilityService get(){ return instance; }
     @Override public void onServiceConnected(){ instance=this; }
     @Override public void onAccessibilityEvent(AccessibilityEvent e){}
-    @Override public void onInterrupt(){}
-    @Override public void onDestroy(){ if(instance==this) instance=null; super.onDestroy(); }
+    @Override public void onInterrupt(){ gesturePending=false; }
+    @Override public void onDestroy(){ if(instance==this) instance=null; gesturePending=false; super.onDestroy(); }
     public void tap(float x,float y){
+        if(gesturePending) return;
         Path p=new Path(); p.moveTo(x,y);
         GestureDescription g=new GestureDescription.Builder()
-            .addStroke(new GestureDescription.StrokeDescription(p,0,20)).build();
-        dispatchGesture(g,null,null);
+            .addStroke(new GestureDescription.StrokeDescription(p,0,35)).build();
+        gesturePending=true;
+        boolean accepted=dispatchGesture(g,new GestureResultCallback(){
+            @Override public void onCompleted(GestureDescription gesture){ gesturePending=false; }
+            @Override public void onCancelled(GestureDescription gesture){ gesturePending=false; }
+        },null);
+        if(!accepted) gesturePending=false;
     }
 }
