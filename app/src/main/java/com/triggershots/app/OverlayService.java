@@ -64,7 +64,10 @@ public class OverlayService extends Service {
             int downX,downY; float rawX,rawY; boolean moved;
             public boolean onTouch(View v,MotionEvent e){
                 if(e.getAction()==MotionEvent.ACTION_DOWN){
-                    downX=triggerLp.x; downY=triggerLp.y; rawX=e.getRawX(); rawY=e.getRawY(); moved=false; dragging=false; return true;
+                    downX=triggerLp.x; downY=triggerLp.y; rawX=e.getRawX(); rawY=e.getRawY(); moved=false; dragging=false;
+                    TriggerAccessibilityService a=TriggerAccessibilityService.get();
+                    if(a==null){ Toast.makeText(OverlayService.this,"Enable Trigger Shots in Accessibility settings first",Toast.LENGTH_LONG).show(); return true; }
+                    running=true; setTargetTouchable(false); h.removeCallbacks(clickLoop); clickLoop.run(); return true;
                 }
                 if(e.getAction()==MotionEvent.ACTION_MOVE){
                     int dx=(int)(e.getRawX()-rawX),dy=(int)(e.getRawY()-rawY);
@@ -73,14 +76,8 @@ public class OverlayService extends Service {
                     return true;
                 }
                 if(e.getAction()==MotionEvent.ACTION_UP||e.getAction()==MotionEvent.ACTION_CANCEL){
-                    if(moved){
-                        getSharedPreferences("settings",0).edit().putInt("trigger_x",triggerLp.x).putInt("trigger_y",triggerLp.y).apply();
-                        dragging=false;
-                    } else {
-                        TriggerAccessibilityService a=TriggerAccessibilityService.get();
-                        if(a==null){ Toast.makeText(OverlayService.this,"Enable Trigger Shots in Accessibility settings first",Toast.LENGTH_LONG).show(); return true; }
-                        running=true; setTargetTouchable(false); h.removeCallbacks(clickLoop); clickLoop.run();
-                    }
+                    running=false; h.removeCallbacks(clickLoop); setTargetTouchable(true);
+                    if(moved){ getSharedPreferences("settings",0).edit().putInt("trigger_x",triggerLp.x).putInt("trigger_y",triggerLp.y).apply(); dragging=false; }
                     return true;
                 }
                 return true;
